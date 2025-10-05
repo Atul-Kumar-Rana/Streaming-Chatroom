@@ -1,0 +1,15 @@
+/* filepath: c:\Users\KIIT0001\Downloads\Streaming\assets\stylesheets\main.css */
+body {
+    font-family: Arial, sans-serif;
+    background: #f8f8f8;
+    margin: 0;
+    padding: 0;
+}
+header, footer {
+    background: #333;
+    color: #fff;
+    padding: 1em;
+}
+main {
+    padding: 2em;
+}

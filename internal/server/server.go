@@ -3,15 +3,14 @@ package server
 import (
 	"flag"
 	"os"
-	"strings"
 	"time"
-
+	"github.com/gofiber/template/html/v2"
 	"github.com/Atul-Kumar-Rana/Streaming-Chatroom/internal/handlers"
 	w "github.com/Atul-Kumar-Rana/Streaming-Chatroom/pkg/webrtc"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/gofiber/template/html"
+	// "github.com/gofiber/template/html"
 	"github.com/gofiber/websocket/v2"
 	"golang.org/x/net/websocket"
 )

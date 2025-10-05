@@ -5,106 +5,101 @@ import (
 	"log"
 
 	"github.com/fasthttp/websocket"
-	"golang.org/x/text/message"
 
 	"time"
 )
 
-const(
-	writeWait = 10*time.Second
-	pongWait  = 60*time.Second
-	pingPeriod  = (pongWait *9)/10
-	maxMessageSize  =  512
-
+const (
+	writeWait      = 10 * time.Second
+	pongWait       = 60 * time.Second
+	pingPeriod     = (pongWait * 9) / 10
+	maxMessageSize = 512
 )
 
-var(
-	newLine = [] byte{'\n'}
-	space = []byte{' '}
+var (
+	newLine = []byte{'\n'}
+	space   = []byte{' '}
 )
 
-
-type Client struct{
-	Hub *Hub
+type Client struct {
+	Hub  *Hub
 	Conn *websocket.Conn
 	Send chan []byte
-
 }
 
-var upgrader = websocket.fastHTTPUpggrader{
-	ReadBufferSize : 1024,
+var upgrader = websocket.FastHTTPUpgrader{
+	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 }
 
-func ( c *Client) readPump(){
-	defer func ()  {
-		c.Hub.unregister<-c
-		c.Conn.close()
-		
+func (c *Client) readPump() {
+	defer func() {
+		c.Hub.Unregister <- c
+		c.Conn.Close()
+
 	}()
 	c.Conn.SetReadLimit(maxMessageSize)
-	c.Conn.SetReaddDeadline(time.Now().Add(pongWait))
-	c.Conn.SetPongHandler(func (string)error {
-		c.Conn.SetReadDeadline(time.Now().Add(pongWait));
+	c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.Conn.SetPongHandler(func(string) error {
+		c.Conn.SetReadDeadline(time.Now().Add(pongWait))
 		return nil
 	})
-	for{
-		_,message,err :=c.Conn.ReadMessage()
-		if err!=nil{
-			if websocket.IsUnexpectedCloseError(err,websocket.CloseGoingAway, websocket.CloseAbnormalClosure){
-				log.Printf("error: %v",err)
+	for {
+		_, message, err := c.Conn.ReadMessage()
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				log.Printf("error: %v", err)
 
 			}
-			break;
+			break
 		}
-		message= bytes.TrimSpace(bytes.Replace(message,newLine,space,-1))
-		c.Hub.broadcast<-message
+		message = bytes.TrimSpace(bytes.Replace(message, newLine, space, -1))
+		c.Hub.Broadcast <- message
 	}
 
 }
 
-func ( c *Client) writePump(){
+func (c *Client) writePump() {
 	ticker := time.NewTicker(pingPeriod)
-	defer func ()  {
+	defer func() {
 		ticker.Stop()
 		c.Conn.Close()
 	}()
-	for{
-		select{
+	for {
+		select {
 		case message, ok := <-c.Send:
-			c.Conn.SetWriterDeadline(time.Now().Add(writeWait))
-			if !ok{
+			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if !ok {
 				return
 			}
-			w,err :=c.Conn.NextWriter(websocket.TextMessage)
-			if err!=nil{
+			w, err := c.Conn.NextWriter(websocket.TextMessage)
+			if err != nil {
 				return
 			}
-			// for multiple message would iterate over it and send those messages 
+			// for multiple message would iterate over it and send those messages
 			w.Write(message)
-			n:=len(c.Send)
-			for i:=0; i<n ; i++{
+			n := len(c.Send)
+			for i := 0; i < n; i++ {
 				w.Write(newLine)
 				w.Write(<-c.Send)
 			}
-			if err:= w.Close(); err!=nil{
+			if err := w.Close(); err != nil {
 				return
 			}
-		case <- ticker.C:
-			c.Conn.SetWriterDeadline(time.Now().Add(writeWait))
-			if err:= c.Conn.WriteMessae(websocket.PingMessage,nil);err!=nil{
+		case <-ticker.C:
+			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
 
 		}
 	}
 
-
 }
 
-func PeerChatConn( c *websocket.conn , hub *Hub)  {
-	client := &Client{Hub:hub , Conn: c , Send:make(chan []byte,256)}
-	client.Hub.register <- client
+func PeerChatConn(c *websocket.Conn, hub *Hub) {
+	client := &Client{Hub: hub, Conn: c, Send: make(chan []byte, 256)}
+	client.Hub.Register <- client
 	go client.writePump()
 	client.readPump()
 }

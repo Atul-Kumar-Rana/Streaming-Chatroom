@@ -1,4 +1,14 @@
 <!-- jsx injectable formate -->
-{{template "partials/head" .}}
-{{template "partials/header" .}}
-{{template "partials/footer" .}}
+<!DOCTYPE html>
+<html lang="en">
+{{ template "head.html" . }}
+<body>
+    {{ template "header.html" . }}
+
+    <main>
+        {{ block "content" . }}{{ end }}
+    </main>
+
+    {{ template "footer.html" . }}
+</body>
+</html>

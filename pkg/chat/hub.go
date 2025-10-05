@@ -2,41 +2,41 @@ package chat
 
 
 type Hub struct{
-	clients map[*Client]bool
-	broadcast chan []byte
-	register chan *Client
-	unregister chan *Client
+	Clients    map[*Client]bool
+    Broadcast  chan []byte
+    Register   chan *Client
+	 Unregister chan *Client
 }
 // fxn to create new hub instance
 // user can come and go out of room
 
 func NewHub() *Hub{
 	return &Hub{
-		broadcast:make(chan []byte) ,
-		register:make(chan *Client) ,
-		unregister: make(chan *Client) ,
-		client: make(map[*Client]bool),
+		 Clients:    make(map[*Client]bool),
+        Broadcast:  make(chan []byte),
+        Register:   make(chan *Client),
+        Unregister: make(chan *Client),
 	}
 
 }
 
 func (h *Hub) Run(){
-	for{
-		select{
-		case client := <-h.register:
-			h.clients[client]=true
-		case client := <-h.unregister:
-			if _,ok := h.clients[client];ok{
-				delete(h.clients,client)
-				close(client.Send)
-			}
-		case message := <-h.broadcast:
-			for client := range h.clients{
-				select{
-				case client.Send <- message:
-				default:
-					close(client.Send)
-					delete(h.clients,client)
+	  for {
+        select {
+        case client := <-h.Register:
+            h.Clients[client] = true
+        case client := <-h.Unregister:
+            if _, ok := h.Clients[client]; ok {
+                delete(h.Clients, client)
+                close(client.Send)
+            }
+        case message := <-h.Broadcast:
+            for client := range h.Clients {
+                select {
+                case client.Send <- message:
+                default:
+                    close(client.Send)
+                    delete(h.Clients, client)
 				}
 			}
 
